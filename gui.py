@@ -11,8 +11,7 @@ from __future__ import print_function
 from __future__ import division
 
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui
-
+from pyqtgraph.Qt import QtGui, QtWidgets
 
 #update = None
 
@@ -40,7 +39,8 @@ def screen_size():
 def init_app():
     global _app
     print('gui | Initializing QApplication')
-    _app = QtGui.QApplication([])
+#     _app = QtGui.QApplication([])
+    _app = QtWidgets.QApplication([])
 
     
     

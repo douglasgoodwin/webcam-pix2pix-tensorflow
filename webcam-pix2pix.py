@@ -41,8 +41,8 @@ pyqt_params = gui.init_params(params.params_list, target_obj=params, w=320)
 gui.params_to_obj(pyqt_params, target_obj=params, create_missing=True, verbose=True)
 
 # create main window
-gui.init_window(x=320, w=(gui.screen_size().width()-320), h=(gui.screen_size().width()-320)*0.4)
-
+# gui.init_window(x=320, w=(gui.screen_size().width()-320), h=(gui.screen_size().width()-320)*0.4)
+gui.init_window(x=320, w=(gui.screen_size().width()-320), h=int((gui.screen_size().width()-320)*0.4))
 
 #%%
 
