@@ -10,7 +10,10 @@ Loads a model and runs predictions on it based on JSON metadata
 from __future__ import print_function
 from __future__ import division
 
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 import numpy as np
 import json
 import os
