@@ -1,11 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 @author: memo
+Updated for PyTorch compatibility
 
 Handles GUI and display
 """
-
 
 from __future__ import print_function
 from __future__ import division
@@ -13,13 +13,10 @@ from __future__ import division
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtWidgets
 
-#update = None
-
-
 _app = None
 _update_timer = None
 _ptree = None
-_params = None #
+_params = None
 _params_target_obj = None
 
 _window_view = None
@@ -29,31 +26,20 @@ _window_stats_label = None
 
 _windows = []
 
-
-
 def screen_size():
     return _app.desktop().screenGeometry()
-    
-    
 
 def init_app():
     global _app
     print('gui | Initializing QApplication')
-#     _app = QtGui.QApplication([])
     _app = QtWidgets.QApplication([])
 
-    
-    
 def process_events():
     if _app != None:
         _app.processEvents()
 
-
-
 def toggle_param(p):
-    p.setValue( not p.value() )
-
-
+    p.setValue(not p.value())
 
 # reading & writing to pyqtgraph.parametertree seems to be slow,
 # so going to cache in an object for direct access
@@ -71,10 +57,8 @@ def params_to_obj(pyqt_params, target_obj, create_missing=False, verbose=False):
             if create_missing and not obj_has_member:
                 if verbose:
                     print('   creating member', p.name())
-
-                setattr(target_obj, p.name(), DummyParamObj()) # quite a hack to create a dummy object
+                setattr(target_obj, p.name(), DummyParamObj())
                 obj_has_member = True
-            
                 
             if obj_has_member:
                 params_to_obj(p, getattr(target_obj, p.name()), create_missing, verbose)
@@ -85,28 +69,13 @@ def params_to_obj(pyqt_params, target_obj, create_missing=False, verbose=False):
             if verbose:
                 print('   {}.{} = {}'.format(target_obj, p.name(), p.value()))
             setattr(target_obj, p.name(), p.value())
-        
 
-
-# TODO: only update what changed
 def on_params_changed(param, changes):
     '''If anything changes in the parameter tree, update _params_target_obj object'''
     print("gui.on_params_changed", param, changes)
     params_to_obj(_params, _params_target_obj)
-#    for param, change, data in changes:
-#        path = p.childPath(param)
-#        if path is not None:
-#            childName = '.'.join(path)
-#        else:
-#            childName = param.name()
-#        print('  parameter: %s'% childName)
-#        print('  change:    %s'% change)
-#        print('  data:      %s'% str(data))
-#        print('  ----------')
-    
-        
 
-def init_params(params_list, target_obj, x=0, y=0, w=320, h=1080, title='Tweak Me Control Freak'):
+def init_params(params_list, target_obj, x=0, y=0, w=320, h=1080, title='PyTorch Pix2Pix Controls'):
     global _ptree, _params, _params_target_obj, _windows
     print('gui.init_params')
     _params_target_obj = target_obj
@@ -121,8 +90,6 @@ def init_params(params_list, target_obj, x=0, y=0, w=320, h=1080, title='Tweak M
     _windows.append(_ptree)
     return _params
 
-
-
 def _add_image_to_layout(layout, row=None, col=None, rowspan=1, colspan=1, title=''):
     i = pg.ImageItem(border='w')
     i.setOpts(axisOrder='row-major')
@@ -134,10 +101,8 @@ def _add_image_to_layout(layout, row=None, col=None, rowspan=1, colspan=1, title
     v = l.addViewBox(lockAspect=True, invertY=True, row=row, col=col, rowspan=rowspan, colspan=colspan)
     v.addItem(i)
     return {'img':i, 'view':v, 'layout':l}
-    
 
-
-def init_window(x=0, y=0, w=1440, h=1080, title='Hello World'):
+def init_window(x=0, y=0, w=1440, h=1080, title='PyTorch Pix2Pix Webcam'):
     global _window_view, _window_layout, _window_imgs, _window_stats_label, _windows
     view = pg.GraphicsView()
     layout = pg.GraphicsLayout(border=(100,100,100))
@@ -147,9 +112,9 @@ def init_window(x=0, y=0, w=1440, h=1080, title='Hello World'):
     view.show()
     
     imgs = []
-    imgs.append( _add_image_to_layout(layout, title='capture') )
-    imgs.append( _add_image_to_layout(layout, title='processed') )
-    imgs.append( _add_image_to_layout(layout, title='prediction') )
+    imgs.append(_add_image_to_layout(layout, title='capture'))
+    imgs.append(_add_image_to_layout(layout, title='processed'))
+    imgs.append(_add_image_to_layout(layout, title='prediction'))
     
     layout.nextRow()
 
@@ -162,8 +127,6 @@ def init_window(x=0, y=0, w=1440, h=1080, title='Hello World'):
     _window_stats_label = stats_label
     
     _windows.append(view)
-    
-
 
 def update_image(index, img_data, enabled=True, autoLevels=False, levels=(0., 1.)):
     if enabled:
@@ -171,29 +134,13 @@ def update_image(index, img_data, enabled=True, autoLevels=False, levels=(0., 1.
     else:
         _window_imgs[index]['img'].clear()
         
-        
-        
 def update_stats(text):
     _window_stats_label.setText(text)
-
-#    
-#def start(sleep_s):
-#    global _app, _update_timer
-#    print('gui.start')
-#    if update != None:
-#        print('gui | Starting Update')
-#        _update_timer = QtCore.QTimer()
-#        _update_timer.timeout.connect(update)
-#        _update_timer.start(sleep_s * 1000)
-#    
-#    print('gui | Starting QApplication')
-#    _app.exec_()
-#    
-#    
 
 def close():
     global _app, _update_timer, _windows
     _update_timer = None
-    _app.closeAllWindows()
+    if _app:
+        _app.closeAllWindows()
     for w in _windows:
         w.close()

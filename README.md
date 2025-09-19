@@ -1,5 +1,213 @@
-This is the source code and pretrained model for the webcam pix2pix demo I posted recently on [twitter](https://twitter.com/memotv/status/858397873712623616) and vimeo. It uses deep learning, or to throw in a few buzzwords: *deep convolutional conditional generative adversarial network autoencoder*. 
+## Pytorch implementation, Fall 2025.
 
+## Overview of Changes
+
+This repository has been migrated from TensorFlow 1.x to PyTorch with Apple Silicon (M-series) GPU support. The migration enables modern deep learning workflows while maintaining the original real-time webcam functionality.
+
+## Key Changes Made
+
+### Core Architecture
+
+- **Replaced TensorFlow Predictor** with PyTorchPredictor class
+- **Added Apple Silicon GPU support** via Metal Performance Shaders (MPS)
+- **Updated all files to Python 3** compatibility
+- **Integrated edge detection** into the predictor for consistency with training
+
+### File Modifications
+
+**webcam-pix2pix.py** (Major rewrite):
+
+- New PyTorchPredictor class with MPS/CUDA/CPU device detection
+- SimpleOptions class to bypass command line argument parsing
+- Integrated edge detection preprocessing matching training pipeline
+- Proper tensor format handling for real-time inference
+
+**params.py** (Updated):
+
+- Removed duplicate parameters that caused conflicts
+- Added EdgeDetection section with training-matched defaults
+- Updated parameter structure for PyTorch workflow
+
+**gui.py** (Minor updates):
+
+- Python 3 compatibility
+- Updated window titles
+
+**msa/ modules** (Python 3 compatibility):
+
+- capturer.py: Updated threading and camera handling
+- framestats.py: Switched to time.perf_counter() for better precision
+- utils.py: Python 3 compatibility maintained
+
+
+
+## Setup Instructions for Mac ARM (M-series) Chips
+
+### Prerequisites
+
+bash
+
+```bash
+# Create virtual environment
+python3 -m venv pix2pix_env
+source pix2pix_env/bin/activate
+
+# Clone both repositories
+git clone https://github.com/douglasgoodwin/pytorch-CycleGAN-and-pix2pix.git
+git clone https://github.com/douglasgoodwin/webcam-pix2pix-tensorflow.git
+```
+
+### Install Dependencies
+
+bash
+
+```bash
+# Install PyTorch with Apple Silicon support
+pip install torch torchvision
+
+# Install other requirements
+cd webcam-pix2pix-tensorflow
+pip install -r requirements.txt
+```
+
+### Model Training
+
+bash
+
+```bash
+cd pytorch-CycleGAN-and-pix2pix
+
+# Train your model
+python train.py \
+  --dataroot ../your_training_dataset \
+  --name your_model_name \
+  --model pix2pix \
+  --direction AtoB \
+  --batch_size 1 \
+  --n_epochs 100 \
+  --n_epochs_decay 100
+```
+
+### Using the Webcam App
+
+1. **Update model paths** in webcam-pix2pix.py:
+
+python
+
+```python
+predictor = PyTorchPredictor(
+    model_path='./pytorch-CycleGAN-and-pix2pix/checkpoints',
+    model_name='your_model_name',
+    epoch='latest'  # or specific epoch like '50'
+)
+```
+
+1. **Run the webcam application:**
+
+bash
+
+```bash
+cd webcam-pix2pix-tensorflow
+python webcam-pix2pix.py
+```
+
+1. **Enable edge detection** in the GUI:
+   - In the parameter window, navigate to Capture → Processing
+   - Check the "canny" option
+   - Adjust thresholds as needed for your lighting conditions
+
+
+
+## Critical Configuration for ARM Macs
+
+### GPU Acceleration
+
+The app automatically detects and uses Apple Silicon GPU via MPS. You should see:
+
+```
+Using MPS (Apple Silicon GPU)
+Initialized with device mps
+```
+
+### Edge Detection Consistency
+
+The webcam edge detection must match your training preprocessing. Default parameters are set to match typical training configurations:
+
+- Canny thresholds: 40/120 (fine), 80/160 (coarse)
+- Gaussian blur: kernel=3, sigma=0.8
+- Multi-scale edge combination
+
+### Camera Settings
+
+For optimal results on Mac ARM:
+
+- The app sets manual exposure and disables autofocus
+- Higher resolution capture (1280x720) downscaled to 256x256
+- 30fps capture with real-time processing
+
+## Troubleshooting
+
+### Resuming Interrupted Training
+
+bash
+
+```bash
+python train.py \
+  --continue_train \
+  --epoch_count [LAST_EPOCH + 1] \
+  --dataroot ../your_dataset \
+  --name your_model_name \
+  --model pix2pix \
+  --direction AtoB
+```
+
+### Edge Detection Mismatch
+
+If webcam results don't match training quality:
+
+- Ensure "canny" parameter is enabled in GUI
+- Verify preprocessing parameters match training exactly
+- Adjust Canny thresholds for your lighting conditions
+
+### GPU Not Detected
+
+bash
+
+```bash
+python -c "import torch; print('MPS available:', torch.backends.mps.is_available())"
+```
+
+## Performance Notes
+
+- **Training time on M4 Mac:** ~3-6 hours for 200 epochs (3000+ images)
+- **Real-time inference:** 15-30 fps depending on model complexity
+- **Memory usage:** ~2-4GB GPU memory for typical pix2pix models
+
+## Model Compatibility
+
+The PyTorch implementation loads models trained with the pytorch-CycleGAN-and-pix2pix framework. Models are expected in this structure:
+
+```
+checkpoints/model_name/
+├── latest_net_G.pth
+├── latest_net_D.pth
+├── [epoch]_net_G.pth
+└── [epoch]_net_D.pth
+```
+
+The webcam app uses only the Generator (net_G.pth) for real-time inference.
+
+
+
+
+
+
+
+---
+
+## Memo's original README
+
+This is the source code and pretrained model for the webcam pix2pix demo I posted recently on [twitter](https://twitter.com/memotv/status/858397873712623616) and vimeo. It uses deep learning, or to throw in a few buzzwords: *deep convolutional conditional generative adversarial network autoencoder*. 
 
 [![video 1](https://cloud.githubusercontent.com/assets/144230/25585045/9b932e50-2e90-11e7-9bb2-692ef9629f0a.png)
 *video 1*
@@ -112,9 +320,9 @@ I use the Anaconda python distribution which comes with almost everything you ne
 
 	conda install -c menpo opencv3
 	conda install pyqtgraph
+   
     
-    
-    
+   
 # Acknowledgements
 Infinite thanks once again to
 
