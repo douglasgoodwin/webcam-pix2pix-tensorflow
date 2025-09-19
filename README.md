@@ -199,6 +199,203 @@ The webcam app uses only the Generator (net_G.pth) for real-time inference.
 
 
 
+---
+
+# Data Preparation and Training Guidelines
+
+## Video Source Requirements
+
+### Source Material
+
+- **Duration:** 5-30 minutes of footage for good results
+- **Content:** Consistent visual domain (e.g., desert gardens, urban scenes, portraits)
+- **Quality:** 720p or higher resolution recommended
+- **Frame rate:** 24-60fps (will be downsampled during extraction)
+- **Lighting:** Varied but consistent conditions within your domain
+
+### Frame Extraction
+
+**Extract frames using ffmpeg:**
+
+bash
+
+```bash
+# From 30fps video to 12fps training frames
+ffmpeg -i source_video.mp4 -vf "fps=12" frames/frame_%06d.png
+
+# Alternative: Extract every Nth frame for more variety
+ffmpeg -i source_video.mp4 -vf "select='not(mod(n\,5))'" -vsync vfr frames/frame_%06d.png
+
+# For different output frame rates:
+ffmpeg -i source_video.mp4 -vf "fps=1" frames/frame_%06d.png    # 1 fps (sparse)
+ffmpeg -i source_video.mp4 -vf "fps=24" frames/frame_%06d.png   # 24 fps (dense)
+```
+
+## Dataset Size Guidelines
+
+### Frame Count Recommendations
+
+- **Minimum viable:** 1,000-2,000 frames
+- **Good results:** 3,000-5,000 frames
+- **Professional quality:** 5,000+ frames
+- **Example:** 3,580 frames from 5 minutes of 30fps footage extracted at 12fps
+
+### Calculation Examples
+
+bash
+
+```bash
+# 10 minutes at 30fps → extract at 2fps = 1,200 frames
+# 15 minutes at 24fps → extract at 4fps = 3,600 frames  
+# 5 minutes at 60fps → extract at 12fps = 3,600 frames
+```
+
+### Train/Validation Split
+
+The preprocessing script automatically creates:
+
+- **90% training data** (e.g., 3,222 images from 3,580 total)
+- **10% validation data** (e.g., 358 images from 3,580 total)
+
+## Data Processing Pipeline
+
+### Create Training Dataset
+
+bash
+
+```bash
+# Run the preprocessing script
+python create_training_dataset.py
+
+# This creates:
+training_dataset/
+├── train/          # 90% of frames (edge|original pairs)
+├── val/           # 10% of frames (edge|original pairs)
+```
+
+### Edge Detection Parameters
+
+The preprocessing uses these critical parameters:
+
+python
+
+```python
+# Multi-scale Canny edge detection
+edges1 = cv2.Canny(blurred, 40, 120, apertureSize=3)   # Fine details
+edges2 = cv2.Canny(blurred, 80, 160, apertureSize=5)   # Main structure
+blur = cv2.GaussianBlur(gray, (3, 3), 0.8)             # Noise reduction
+```
+
+**Note:** These exact parameters must be replicated in the webcam app for consistent results.
+
+## Training Configuration
+
+### Epoch Recommendations
+
+bash
+
+```bash
+# Standard training schedule
+python train.py \
+  --dataroot ../training_dataset \
+  --name your_model \
+  --model pix2pix \
+  --direction AtoB \
+  --n_epochs 100 \      # Linear learning rate phase
+  --n_epochs_decay 100  # Decay learning rate phase
+```
+
+**Total epochs:** 200 (100 + 100)
+
+- **Epochs 1-20:** Basic structure learning
+- **Epochs 20-50:** Feature refinement
+- **Epochs 50-100:** Quality improvement
+- **Epochs 100-200:** Fine-tuning with learning rate decay
+
+### Early Results Timeline
+
+- **Epoch 5:** Basic shapes and colors appear
+- **Epoch 15:** Recognizable scene generation
+- **Epoch 25:** Good quality for testing
+- **Epoch 50+:** Production-ready results
+
+### Training Time Estimates
+
+**Apple Silicon (M4/M3/M2) with MPS:**
+
+- 3,000 frames: ~3-4 hours for 200 epochs
+- 5,000 frames: ~5-6 hours for 200 epochs
+- 10,000 frames: ~8-12 hours for 200 epochs
+
+**CPU only (not recommended):**
+
+- Add 3-4x to the above times
+
+### Batch Size Considerations
+
+bash
+
+```bash
+# For Apple Silicon Macs
+--batch_size 1    # Recommended for stability
+--batch_size 4    # If you have 32GB+ unified memory
+```
+
+**Memory usage:**
+
+- Batch size 1: ~2-4GB GPU memory
+- Batch size 4: ~6-12GB GPU memory
+
+### Storage Requirements
+
+- **Raw frames:** ~50-200MB per 1000 frames
+- **Processed dataset:** ~100-400MB per 1000 frames (includes edge pairs)
+- **Model checkpoints:** ~200MB per saved epoch
+- **Training logs/web:** ~50-100MB
+
+## Quality Optimization
+
+### Frame Selection Strategy
+
+**Maximize visual diversity:**
+
+- Different lighting conditions within your domain
+- Various angles and compositions
+- Range of subjects within your theme
+- Avoid near-duplicate frames
+
+**Bad extraction rates:**
+
+- Too sparse (fps=0.5): May miss important transitions
+- Too dense (fps=30): Many duplicate/similar frames waste training time
+
+**Optimal extraction:**
+
+- **Static scenes:** 1-2 fps
+- **Dynamic content:** 5-12 fps
+- **Mixed content:** 3-8 fps
+
+### Domain Consistency
+
+Train on visually cohesive content:
+
+- **Good:** All desert garden footage
+- **Good:** All urban architecture
+- **Good:** All portrait photography
+- **Bad:** Mixed domains (gardens + cities + portraits)
+
+The model learns a specific visual language from your training domain. Mixing drastically different visual styles dilutes the learning and produces poor results.
+
+### Validation During Training
+
+Monitor progress at:
+
+- `checkpoints/your_model/web/index.html`
+- Check sample outputs every 10-20 epochs
+- Look for overfitting after epoch 100+
+
+Training can be stopped early if results plateau or if you're satisfied with quality at epoch 50-100.
+
 
 
 
