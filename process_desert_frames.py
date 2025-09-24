@@ -2,6 +2,7 @@ import cv2
 import os
 import numpy as np
 from glob import glob
+import argparse
 
 def process_cactus_frames(frames_dir, output_dir):
     """
@@ -73,14 +74,62 @@ def process_cactus_frames(frames_dir, output_dir):
     
     return output_dir
 
+def main():
+    parser = argparse.ArgumentParser(
+        description="Process desert/cactus frames into pix2pix training dataset"
+    )
+    
+    parser.add_argument(
+        "input_dir",
+        help="Input directory containing the extracted frames"
+    )
+    
+    parser.add_argument(
+        "output_dir",
+        help="Output directory for the pix2pix dataset"
+    )
+    
+    parser.add_argument(
+        "--file-pattern",
+        default="*.png",
+        help="File pattern for frame files (default: *.png)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Validate input directory
+    if not os.path.exists(args.input_dir):
+        print(f"❌ Error: Input directory '{args.input_dir}' does not exist!")
+        return 1
+    
+    # Check if input directory contains frames
+    frame_files = glob(os.path.join(args.input_dir, args.file_pattern))
+    if not frame_files:
+        print(f"❌ Error: No files matching '{args.file_pattern}' found in '{args.input_dir}'")
+        return 1
+    
+    print(f"Processing frames from: {args.input_dir}")
+    print(f"Output dataset to: {args.output_dir}")
+    print(f"Looking for files: {args.file_pattern}")
+    
+    try:
+        # Process all frames
+        dataset_path = process_cactus_frames(args.input_dir, args.output_dir)
+        
+        print(f"\nNext steps:")
+#         print(f"1. cd pix2pix-tensorflow")
+#         print(f"2. Run training:")
+#         print(f"   python pix2pix.py --mode train --output_dir ./cactus_model --max_epochs 200 --input_dir ../{os.path.basename(dataset_path)}/train --which_direction AtoB")
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Error processing frames: {e}")
+        return 1
+
 if __name__ == "__main__":
-    frames_directory = "path/to/your/desert_frames"  # Your frames folder
-    dataset_output = "desert_cactus_dataset"
-    
-    # Process all frames
-    dataset_path = process_cactus_frames(frames_directory, dataset_output)
-    
-    print(f"\nNext steps:")
-    print(f"1. cd pix2pix-tensorflow")
-    print(f"2. Run training:")
-    print(f"   python pix2pix.py --mode train --output_dir ./cactus_model --max_epochs 200 --input_dir ../{dataset_output}/train --which_direction AtoB")
+    exit(main())
+
+# Example usage:
+# python process_desert_frames.py /path/to/desert_frames desert_cactus_dataset
+# python process_desert_frames.py ./frames ./training_dataset --file-pattern "*.jpg"
