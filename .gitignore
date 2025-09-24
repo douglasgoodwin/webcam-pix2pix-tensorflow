@@ -66,5 +66,4 @@ raw_cactus_frames/
 *.caffemodel
 cactus_clean_dataset/
 *.prototxt
-process_desert_frames.py
 hed_cactus_edges.py
