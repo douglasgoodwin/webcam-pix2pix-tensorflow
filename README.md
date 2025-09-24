@@ -83,7 +83,7 @@ python train.py \
   --name your_model_name \
   --model pix2pix \
   --direction AtoB \
-  --batch_size 1 \
+  --batch_size 4 \
   --n_epochs 100 \
   --n_epochs_decay 100
 ```
